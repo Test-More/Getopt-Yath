@@ -2,7 +2,7 @@ package Getopt::Yath::Option::AutoList;
 use strict;
 use warnings;
 
-our $VERSION = '2.000008';
+our $VERSION = '2.000009';
 
 use parent 'Getopt::Yath::Option::List';
 use Getopt::Yath::HashBase;

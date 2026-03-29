@@ -2,7 +2,7 @@ package Getopt::Yath::Option::Map;
 use strict;
 use warnings;
 
-our $VERSION = '2.000008';
+our $VERSION = '2.000009';
 
 use Getopt::Yath::Util qw/decode_json/;
 
