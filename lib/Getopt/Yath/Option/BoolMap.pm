@@ -1,3 +1,5 @@
+package Getopt::Yath::Option::BoolMap;
+use strict;
 use warnings;
 
 our $VERSION = '2.000008';

@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+    - Fix missing package declaration in BoolMap
+
 2.000007  2026-01-15 15:14:23-08:00 America/Los_Angeles
 
     - Broke out from Test2-Harness dist
