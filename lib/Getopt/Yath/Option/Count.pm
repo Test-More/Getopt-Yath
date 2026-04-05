@@ -81,6 +81,35 @@ desired count.
         initialize => 0,
     );
 
+=head1 METHODS
+
+All methods from L<Getopt::Yath::Option> are inherited. The following are
+overridden or noteworthy:
+
+=over 4
+
+=item requires_arg: false
+
+=item allows_arg: true
+
+C<--opt> increments the counter, C<--opt=N> sets it to N, C<--no-opt> resets it
+to 0.
+
+=item allows_shortval: false
+
+The C<-oVAL> form is disabled so that C<-vvv> can increment the counter
+multiple times.
+
+=item is_populated: always true
+
+Counters are always considered populated since they default to 0.
+
+=item can_set_env: true
+
+Count options can set environment variables.
+
+=back
+
 =head1 SOURCE
 
 The source code repository for Getopt-Yath can be found at

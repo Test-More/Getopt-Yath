@@ -69,6 +69,20 @@ that get expanded.
         long_examples => [' path/to/file'],
     );
 
+=head1 METHODS
+
+All methods from L<Getopt::Yath::Option::List> are inherited. The following are
+overridden or noteworthy:
+
+=over 4
+
+=item normalize_value(@input)
+
+Values containing wildcard characters (C<*>) are expanded using Perl's
+C<glob()> function. All other processing is delegated to the parent class.
+
+=back
+
 =head1 SOURCE
 
 The source code repository for Getopt-Yath can be found at

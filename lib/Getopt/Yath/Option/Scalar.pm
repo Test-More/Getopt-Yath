@@ -56,6 +56,24 @@ C<--opt=val>. C<--no-opt> can be used to clear the value.
         default => 'john',
     );
 
+=head1 METHODS
+
+All methods from L<Getopt::Yath::Option> are inherited. The following are
+overridden or noteworthy:
+
+=over 4
+
+=item requires_arg: true
+
+A value must be provided (C<--opt VALUE> or C<--opt=VALUE>).
+
+=item can_set_env: true
+
+Scalar options can set environment variables. Negated env vars (C<!VAR>) are
+supported.
+
+=back
+
 =head1 SOURCE
 
 The source code repository for Getopt-Yath can be found at

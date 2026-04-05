@@ -55,6 +55,26 @@ in an exception.
         long_examples  => ['', '=Subtitle'],
     );
 
+=head1 METHODS
+
+All methods from L<Getopt::Yath::Option::Scalar> are inherited. The following
+are overridden or noteworthy:
+
+=over 4
+
+=item requires_arg: false
+
+=item allows_autofill: true
+
+=item requires_autofill: true
+
+C<--opt> uses the autofill value. C<--opt=val> uses the provided value.
+C<--opt VAL> is B<not> supported (the next argument is not consumed).
+
+=item can_set_env: true
+
+=back
+
 =head1 SOURCE
 
 The source code repository for Getopt-Yath can be found at

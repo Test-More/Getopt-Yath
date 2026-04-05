@@ -109,6 +109,50 @@ depending on if it has the --no- prefix.
         description => 'Match '--feature-(foo), --no-feature-(foo), etc and set {foo => $BOOL} in the 'features' option',
     );
 
+=head1 METHODS
+
+All methods from L<Getopt::Yath::Option::Map> are inherited. The following are
+overridden or noteworthy:
+
+=over 4
+
+=item requires_arg
+
+Depends on the value of the C<requires_arg> attribute. Defaults to false.
+
+=item custom_matches
+
+Returns a coderef that matches command-line arguments against the C<pattern>
+regex. When C<--MATCH> is used the key gets a true value; when C<--no-MATCH> is
+used it gets a false value.
+
+=item no_arg_value
+
+Returns the option's field name with a value of C<1>.
+
+=back
+
+=head1 ADDITIONAL ATTRIBUTES
+
+=over 4
+
+=item pattern => qr/.../
+
+B<Required.> A regex pattern (with a capture group) that is embedded into
+C<< qr/^--(no-)?$pattern$/ >>. The first capture group from the pattern is
+used as the hash key.
+
+=item requires_arg => BOOL
+
+If true, the option requires an argument. Defaults to false.
+
+=item custom_matches => sub { ... }
+
+Optional coderef to override the default matching logic. Receives the option
+object, the input string, and the parse state.
+
+=back
+
 =head1 SOURCE
 
 The source code repository for Getopt-Yath can be found at

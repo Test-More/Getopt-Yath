@@ -40,6 +40,24 @@ additional values.
         autofill => sub { qw/foo bar baz/ },
     );
 
+=head1 METHODS
+
+All methods from L<Getopt::Yath::Option::List> are inherited. The following are
+overridden or noteworthy:
+
+=over 4
+
+=item requires_arg: false
+
+=item allows_autofill: true
+
+=item requires_autofill: true
+
+C<--opt> adds the autofill value(s) to the list. C<--opt=VAL> adds a specific
+value.
+
+=back
+
 =head1 SOURCE
 
 The source code repository for Getopt-Yath can be found at

@@ -64,6 +64,24 @@ Like L<Getopt::Yath::Option::PathList> with autofill.
     );
 
 
+=head1 METHODS
+
+All methods from L<Getopt::Yath::Option::AutoList> are inherited, with
+C<normalize_value> from L<Getopt::Yath::Option::PathList> (glob expansion).
+
+=over 4
+
+=item requires_arg: false
+
+=item allows_autofill: true
+
+=item requires_autofill: true
+
+C<--opt> adds the autofill paths. C<--opt=GLOB> expands the glob and adds
+matching paths.
+
+=back
+
 =head1 SOURCE
 
 The source code repository for Getopt-Yath can be found at

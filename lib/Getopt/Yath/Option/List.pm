@@ -126,6 +126,44 @@ list.
         short_examples => [ ' HOME', ' SHELL' ],
     );
 
+=head1 METHODS
+
+All methods from L<Getopt::Yath::Option> are inherited. The following are
+overridden or noteworthy:
+
+=over 4
+
+=item requires_arg: true
+
+=item allows_list: true
+
+Each use of C<--opt VAL> appends to the list. C<--no-opt> empties it.
+
+=item normalize_value(@input)
+
+If the input looks like a JSON array (e.g., C<'["a","b"]'>), it is decoded and
+the elements are returned. If C<split_on> is set, values are split on that
+delimiter before normalization.
+
+=item get_initial_value
+
+Checks C<from_env_vars> for initial values. Unlike the base class, multiple
+environment variables can each contribute a value. Returns an empty arrayref if
+no environment values are found.
+
+=back
+
+=head1 ADDITIONAL ATTRIBUTES
+
+=over 4
+
+=item split_on => $delimiter
+
+A string or regex to split values on. For example, with C<< split_on => ',' >>,
+C<--opt foo,bar> adds both C<foo> and C<bar> to the list.
+
+=back
+
 =head1 SOURCE
 
 The source code repository for Getopt-Yath can be found at

@@ -65,9 +65,27 @@ Default is off unless the C<default> is parameter is provided.
         default => 0,
     );
 
-=head1 EXPORTS
+=head1 METHODS
+
+All methods from L<Getopt::Yath::Option> are inherited. The following are
+overridden or noteworthy:
 
 =over 4
+
+=item requires_arg: false
+
+=item allows_arg: false
+
+Bool options take no argument. C<--opt> turns it on, C<--no-opt> turns it off.
+
+=item can_set_env: true
+
+Bool options can set environment variables. Negated env vars (C<!VAR>) are
+supported and will invert the boolean value.
+
+=item get_default_value
+
+Returns C<0> by default unless a custom C<default> is provided.
 
 =back
 
