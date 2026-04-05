@@ -58,4 +58,48 @@ subtest 'fit_to_width narrow width forces wrapping' => sub {
     ok(@lines >= 2, 'narrow width causes wrapping');
 };
 
+subtest 'fit_to_width no prefix' => sub {
+    my $out = fit_to_width(" ", "hello world", width => 80);
+    unlike($out, qr/^  /, 'no prefix means no indentation');
+};
+
+subtest 'fit_to_width empty prefix string' => sub {
+    my $out = fit_to_width(" ", "hello world", width => 80, prefix => "");
+    is($out, "hello world", 'empty prefix adds empty string (no visible change)');
+};
+
+subtest 'fit_to_width custom prefix' => sub {
+    my $out = fit_to_width(" ", "hello world", width => 80, prefix => "--- ");
+    like($out, qr/^--- /, 'custom prefix applied');
+};
+
+subtest 'fit_to_width single word' => sub {
+    my $out = fit_to_width(" ", "superlongword", width => 5);
+    is($out, "superlongword", 'single word longer than width is not broken');
+};
+
+subtest 'fit_to_width empty text' => sub {
+    my $out = fit_to_width(" ", "", width => 80);
+    is($out, "", 'empty text returns empty string');
+};
+
+subtest 'fit_to_width multiline prefix' => sub {
+    my $out = fit_to_width(" ", "aaa bbb ccc ddd", width => 8, prefix => "> ");
+    my @lines = split /\n/, $out;
+    for my $line (@lines) {
+        like($line, qr/^> /, "each wrapped line has prefix: '$line'");
+    }
+};
+
+subtest 'fit_to_width custom join' => sub {
+    my $out = fit_to_width(", ", [qw/a b c/], width => 80);
+    is($out, "a, b, c", 'custom join string used');
+};
+
+subtest 'fit_to_width default width' => sub {
+    # Just verify it doesn't die when no width is given
+    my $out = fit_to_width(" ", "some text here for testing default width calculation");
+    ok(defined $out, 'default width produces output');
+};
+
 done_testing;
