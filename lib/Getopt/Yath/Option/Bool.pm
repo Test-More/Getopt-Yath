@@ -16,7 +16,7 @@ sub requires_autofill { 0 }
 
 sub no_arg_value { 1 }    # --bool
 
-# undef is not populated, otherwise qw have 1 or 0
+# undef is not populated, otherwise we have 1 or 0
 sub is_populated { defined(${$_[1]}) ? 1 : 0 }
 
 sub add_value   { ${$_[1]} = $_[2] }
@@ -54,7 +54,7 @@ Getopt::Yath::Option::Bool - Option type for boolean values (no arguments)
 
 =head1 DESCRIPTION
 
-Is either on or off. C<--opt> will turn it onn. C<--no-opt> will turn it off.
+Is either on or off. C<--opt> will turn it on. C<--no-opt> will turn it off.
 Default is off unless the C<default> is parameter is provided.
 
 =head1 SYNOPSIS

@@ -96,7 +96,7 @@ Getopt::Yath::Option::BoolMap - Options that take multiple boolean values.
 
 Match several --OPTION-XXX and --no-OPTION-XXX options based on a given regex,
 populates a hashref where each option found is given a true or false value
-depedning on if it has the --no- prefix.
+depending on if it has the --no- prefix.
 
 =head1 SYNOPSIS
 
