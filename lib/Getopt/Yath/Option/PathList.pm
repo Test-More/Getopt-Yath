@@ -37,7 +37,7 @@ sub default_short_examples {
     my $self = shift;
     my %params = @_;
 
-    my $list = $self->SUPER::default_long_examples(%params);
+    my $list = $self->SUPER::default_short_examples(%params);
     push @$list => (qq{ '*.*'}, qq{='*.*'});
     return $list;
 }
