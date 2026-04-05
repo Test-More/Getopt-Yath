@@ -283,4 +283,243 @@ subtest 'skip_posts' => sub {
     ok($post_ran, 'post-processor runs without skip_posts');
 };
 
+subtest 'nested groups' => sub {
+    package NestedGroupParse;
+    use Getopt::Yath;
+
+    option_group {category => 'NG', group => 'ng', no_module => 1} => sub {
+        option nlist => (type => 'List', description => 'Nested list');
+    };
+
+    package main;
+
+    my $res = NestedGroupParse::parse_options(
+        ['--nlist', ':{', 'a', ':{', 'inner1', 'inner2', '}:', 'b', '}:'],
+        groups => {':{' => '}:'},
+    );
+    is(
+        $res->{settings}->{ng}->{nlist},
+        ['a', ['inner1', 'inner2'], 'b'],
+        'nested groups produce nested arrayrefs',
+    );
+};
+
+subtest 'applicable post-processor' => sub {
+    package ApplicablePost;
+    use Getopt::Yath;
+
+    my $ran_yes = 0;
+    my $ran_no  = 0;
+    option_group {category => 'AP', group => 'ap', no_module => 1} => sub {
+        option ap_flag => (type => 'Bool', description => 'Flag');
+    };
+    option_post_process(0, sub { 0 }, sub { $ran_no++ });
+    option_post_process(0, sub { 1 }, sub { $ran_yes++ });
+
+    package main;
+
+    $ran_yes = 0;
+    $ran_no  = 0;
+    ApplicablePost::parse_options([]);
+    is($ran_yes, 1, 'applicable post-processor ran');
+    is($ran_no,  0, 'inapplicable post-processor skipped');
+};
+
+subtest 'process_args requires arrayref' => sub {
+    package ReqArrayRef;
+    use Getopt::Yath;
+
+    option_group {category => 'RA', group => 'ra', no_module => 1} => sub {
+        option ra_flag => (type => 'Bool', description => 'Flag');
+    };
+
+    package main;
+
+    like(
+        dies { ReqArrayRef::parse_options('not an arrayref') },
+        qr/Must provide an argv arrayref/,
+        'parse_options dies without arrayref',
+    );
+};
+
+subtest 'requires_arg with no remaining args' => sub {
+    package ReqArgEmpty;
+    use Getopt::Yath;
+
+    option_group {category => 'RAE', group => 'rae', no_module => 1} => sub {
+        option need_val => (type => 'Scalar', description => 'Needs a value');
+    };
+
+    package main;
+
+    like(
+        dies { ReqArgEmpty::parse_options(['--need-val']) },
+        qr/No argument provided to '--need-val'/,
+        'dies when requires_arg but no args remain',
+    );
+};
+
+subtest 'set=val not allowed on Bool' => sub {
+    package SetValBool;
+    use Getopt::Yath;
+
+    option_group {category => 'SVB', group => 'svb', no_module => 1} => sub {
+        option svb_flag => (type => 'Bool', description => 'Bool flag');
+    };
+
+    package main;
+
+    like(
+        dies { SetValBool::parse_options(['--svb-flag=1']) },
+        qr/Arguments are not allowed for this option type/,
+        'Bool rejects --flag=val form',
+    );
+};
+
+subtest 'option with trigger on clear' => sub {
+    package TriggerClear;
+    use Getopt::Yath;
+
+    my @trigger_actions;
+    option_group {category => 'TC', group => 'tc', no_module => 1} => sub {
+        option tc_val => (
+            type        => 'Scalar',
+            default     => 'x',
+            description => 'Triggerable',
+            trigger     => sub { my %p = @_[1..$#_]; push @trigger_actions, $p{action} },
+        );
+    };
+
+    package main;
+
+    @trigger_actions = ();
+    TriggerClear::parse_options(['--tc-val', 'hello']);
+    ok((grep { $_ eq 'set' } @trigger_actions), 'trigger fires with set action');
+
+    @trigger_actions = ();
+    TriggerClear::parse_options(['--no-tc-val']);
+    ok((grep { $_ eq 'clear' } @trigger_actions), 'trigger fires with clear action');
+};
+
+subtest '--no-opt then --opt=val' => sub {
+    package ClearThenSet;
+    use Getopt::Yath;
+
+    option_group {category => 'CTS', group => 'cts', no_module => 1} => sub {
+        option cts_val => (type => 'Scalar', default => 'orig', description => 'Clear then set');
+    };
+
+    package main;
+
+    my $res = ClearThenSet::parse_options(['--no-cts-val', '--cts-val=new']);
+    is($res->{settings}->{cts}->{cts_val}, 'new', 'clear then set gives new value');
+    ok(!$res->{cleared}->{cts}->{cts_val}, 'cleared state removed after re-set');
+};
+
+subtest 'cleared option skips default' => sub {
+    package ClearNoDefault;
+    use Getopt::Yath;
+
+    option_group {category => 'CND', group => 'cnd', no_module => 1} => sub {
+        option cnd_val => (type => 'Scalar', default => 'should_not_appear', description => 'Clear no default');
+    };
+
+    package main;
+
+    my $res = ClearNoDefault::parse_options(['--no-cnd-val']);
+    is($res->{settings}->{cnd}->{cnd_val}, undef, 'cleared option does not get default');
+};
+
+subtest 'skip_invalid_opts collects skipped' => sub {
+    package SkipInvOpt;
+    use Getopt::Yath;
+
+    option_group {category => 'SIO', group => 'sio', no_module => 1} => sub {
+        option sio_flag => (type => 'Bool', description => 'Flag');
+    };
+
+    package main;
+
+    my $res = SkipInvOpt::parse_options(
+        ['--sio-flag', '--invalid-one', '--invalid-two'],
+        skip_invalid_opts => 1,
+    );
+    is($res->{settings}->{sio}->{sio_flag}, 1, 'valid option parsed');
+    is($res->{skipped}, ['--invalid-one', '--invalid-two'], 'invalid opts collected in skipped');
+};
+
+subtest 'docs with group filter' => sub {
+    package DocsGroupFilter;
+    use Getopt::Yath;
+
+    option_group {category => 'Cat A', group => 'grp_a', no_module => 1} => sub {
+        option dg_a => (type => 'Bool', description => 'Option A');
+    };
+    option_group {category => 'Cat B', group => 'grp_b', no_module => 1} => sub {
+        option dg_b => (type => 'Bool', description => 'Option B');
+    };
+
+    package main;
+
+    my $docs = DocsGroupFilter::options->docs('cli', group => 'grp_a');
+    like($docs, qr/dg-a/, 'filtered docs contain group_a option');
+    unlike($docs, qr/dg-b/, 'filtered docs exclude group_b option');
+};
+
+subtest 'docs invalid format' => sub {
+    package DocsInvFmt;
+    use Getopt::Yath;
+
+    option_group {category => 'DIF', group => 'dif', no_module => 1} => sub {
+        option dif_flag => (type => 'Bool', description => 'Flag');
+    };
+
+    package main;
+
+    like(
+        dies { DocsInvFmt::options->docs('invalid_format') },
+        qr/Invalid documentation format 'invalid_format'/,
+        'docs dies with invalid format',
+    );
+};
+
+subtest 'option_group error propagation' => sub {
+    package GroupError;
+    use Getopt::Yath;
+
+    package main;
+
+    like(
+        dies {
+            GroupError::option_group({group => 'gerr', no_module => 1} => sub {
+                die "intentional error\n";
+            })
+        },
+        qr/intentional error/,
+        'option_group propagates exceptions from sub',
+    );
+};
+
+subtest 'category_sort_map affects doc ordering' => sub {
+    package SortMapTest;
+    use Getopt::Yath;
+
+    # set_category_sort_map is a HashBase setter, takes a single hashref value
+    category_sort_map({'Zzzz' => 1, 'Aaaa' => 2});
+
+    option_group {category => 'Aaaa', group => 'sma', no_module => 1} => sub {
+        option sma_opt => (type => 'Bool', description => 'A opt');
+    };
+    option_group {category => 'Zzzz', group => 'smz', no_module => 1} => sub {
+        option smz_opt => (type => 'Bool', description => 'Z opt');
+    };
+
+    package main;
+
+    my $docs = SortMapTest::options->docs('cli');
+    my $pos_z = index($docs, 'Zzzz');
+    my $pos_a = index($docs, 'Aaaa');
+    ok($pos_z < $pos_a, 'category_sort_map puts Zzzz (weight 1) before Aaaa (weight 2)');
+};
+
 done_testing;
