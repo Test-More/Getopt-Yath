@@ -57,7 +57,7 @@ sub delete_option {
 sub remove_option {
     my $self = shift;
     my ($name) = @_;
-    delete ${$self}->{$name};
+    delete $self->{$name};
 }
 
 our $AUTOLOAD;
