@@ -466,8 +466,8 @@ sub process_args {
             my $setval = $val[0];
             $setval = $setval ? 0 : 1 if $neg;
 
-            $state->{env}->{$env} = $val[0];
-            $ENV{$env} = $val[0] unless $params{no_set_env};
+            $state->{env}->{$env} = $setval;
+            $ENV{$env} = $setval unless $params{no_set_env};
         }
     }
 
