@@ -172,4 +172,70 @@ subtest 'Settings FROM_JSON' => sub {
     is($s->mygrp->val, 42, 'FROM_JSON round-trips correctly');
 };
 
+subtest 'Settings FROM_JSON_FILE' => sub {
+    use Getopt::Yath::Util qw/encode_json_file/;
+    my $file = encode_json_file({filegrp => {z => 99}});
+    my $s = Getopt::Yath::Settings->FROM_JSON_FILE($file);
+    isa_ok($s, 'Getopt::Yath::Settings');
+    is($s->filegrp->z, 99, 'FROM_JSON_FILE loads correctly');
+    unlink $file;
+};
+
+subtest 'Settings construction with pairs' => sub {
+    my $s = Getopt::Yath::Settings->new(pgrp => {p => 1});
+    isa_ok($s, 'Getopt::Yath::Settings');
+    isa_ok($s->{pgrp}, ['Getopt::Yath::Settings::Group'], 'pair-constructed group is blessed');
+    is($s->pgrp->p, 1, 'pair-constructed group has data');
+};
+
+subtest 'Settings create_group with hashref' => sub {
+    my $s = Getopt::Yath::Settings->new({});
+    my $g = $s->create_group('href_grp', {a => 10, b => 20});
+    isa_ok($g, 'Getopt::Yath::Settings::Group');
+    is($g->a, 10, 'create_group with hashref arg');
+    is($g->b, 20, 'create_group with hashref arg');
+};
+
+subtest 'Settings maybe with undef value' => sub {
+    my $s = Getopt::Yath::Settings->new({grp => {opt => undef}});
+    is($s->maybe('grp', 'opt', 'fallback'), 'fallback', 'maybe returns default when value is undef');
+};
+
+subtest 'Settings AUTOLOAD on non-blessed dies' => sub {
+    like(
+        dies { Getopt::Yath::Settings::nonexistent() },
+        qr/must be called on a blessed instance/,
+        'Settings AUTOLOAD dies on non-blessed call',
+    );
+};
+
+subtest 'Settings::Group AUTOLOAD on non-blessed dies' => sub {
+    like(
+        dies { Getopt::Yath::Settings::Group::nonexistent() },
+        qr/must be called on a blessed instance/,
+        'Group AUTOLOAD dies on non-blessed call',
+    );
+};
+
+subtest 'Settings::Group option too many args' => sub {
+    my $g = Getopt::Yath::Settings::Group->new(x => 1);
+    like(
+        dies { $g->option('x', 'a', 'b') },
+        qr/Too many arguments/,
+        'option() dies with too many arguments',
+    );
+};
+
+subtest 'Settings::Group AUTOLOAD set' => sub {
+    my $g = Getopt::Yath::Settings::Group->new(aset => 'orig');
+    $g->aset('updated');
+    is($g->aset, 'updated', 'AUTOLOAD setter works');
+};
+
+subtest 'Settings::Group AUTOLOAD lvalue' => sub {
+    my $g = Getopt::Yath::Settings::Group->new(alv => 'x');
+    $g->alv = 'y';
+    is($g->alv, 'y', 'AUTOLOAD lvalue assignment works');
+};
+
 done_testing;
