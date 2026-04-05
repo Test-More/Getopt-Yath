@@ -240,4 +240,337 @@ subtest 'maybe option attribute' => sub {
     is($res->{settings}->{maybe}->{opt_list}, undef, 'maybe List has no initial value');
 };
 
+subtest 'List JSON parse error' => sub {
+    package ListJsonErrTest;
+    use Getopt::Yath;
+
+    option_group {category => 'LJSON Err', group => 'ljerr', no_module => 1} => sub {
+        option bad_json_list => (
+            type        => 'List',
+            description => 'Bad JSON list',
+        );
+    };
+
+    package main;
+
+    # Input must match /^\s*\[.*\]\s*$/s to trigger JSON parsing
+    like(
+        dies { ListJsonErrTest::parse_options(['--bad-json-list', '[invalid json]']) },
+        qr/Could not decode JSON string/,
+        'List dies on invalid JSON array',
+    );
+};
+
+subtest 'Map JSON parse error' => sub {
+    package MapJsonErrTest;
+    use Getopt::Yath;
+
+    option_group {category => 'MJSON Err', group => 'mjerr', no_module => 1} => sub {
+        option bad_json_map => (
+            type        => 'Map',
+            description => 'Bad JSON map',
+        );
+    };
+
+    package main;
+
+    like(
+        dies { MapJsonErrTest::parse_options(['--bad-json-map', '{invalid json}']) },
+        qr/Could not decode JSON string/,
+        'Map dies on invalid JSON object',
+    );
+};
+
+subtest 'Map normalize_value with multiple inputs' => sub {
+    package MapMultiInputTest;
+    use Getopt::Yath;
+
+    option_group {category => 'Map Multi', group => 'mapmulti', no_module => 1} => sub {
+        option multi_map => (
+            type        => 'Map',
+            normalize   => sub { @_ },
+            description => 'Multi-input map',
+        );
+    };
+
+    package main;
+
+    # When normalize_value gets >1 args, it calls SUPER::normalize_value directly
+    my $opt = MapMultiInputTest::options->options->[0];
+    my %result = $opt->normalize_value('key', 'val');
+    is(\%result, {key => 'val'}, 'Map normalize_value with >1 inputs passes through to SUPER');
+};
+
+subtest 'List with from_env_vars' => sub {
+    package ListEnvTest;
+    use Getopt::Yath;
+
+    option_group {category => 'List Env', group => 'listenv', no_module => 1} => sub {
+        option env_list => (
+            type          => 'List',
+            from_env_vars => ['GETOPT_LIST_TEST_A', 'GETOPT_LIST_TEST_B'],
+            description   => 'Env list',
+        );
+    };
+
+    package main;
+
+    local $ENV{GETOPT_LIST_TEST_A} = 'aval';
+    local $ENV{GETOPT_LIST_TEST_B} = 'bval';
+    my $res = ListEnvTest::parse_options([]);
+    is($res->{settings}->{listenv}->{env_list}, ['aval', 'bval'], 'List collects from multiple env vars');
+};
+
+subtest 'Map with from_env_vars' => sub {
+    package MapEnvTest;
+    use Getopt::Yath;
+
+    option_group {category => 'Map Env', group => 'mapenv', no_module => 1} => sub {
+        option env_map => (
+            type          => 'Map',
+            from_env_vars => ['GETOPT_MAP_TEST_X'],
+            description   => 'Env map',
+        );
+    };
+
+    package main;
+
+    local $ENV{GETOPT_MAP_TEST_X} = 'xval';
+    my $res = MapEnvTest::parse_options([]);
+    is($res->{settings}->{mapenv}->{env_map}, {GETOPT_MAP_TEST_X => 'xval'}, 'Map uses env var name as key');
+};
+
+subtest 'Bool negated from_env_vars' => sub {
+    package BoolNegEnvTest;
+    use Getopt::Yath;
+
+    option_group {category => 'Bool Neg Env', group => 'boolnegenv', no_module => 1} => sub {
+        option quiet => (
+            type          => 'Bool',
+            from_env_vars => ['!GETOPT_BOOL_VERBOSE'],
+            description   => 'Quiet mode',
+        );
+    };
+
+    package main;
+
+    local $ENV{GETOPT_BOOL_VERBOSE} = 1;
+    my $res = BoolNegEnvTest::parse_options([]);
+    is($res->{settings}->{boolnegenv}->{quiet}, 0, 'negated env: VERBOSE=1 means quiet=0');
+
+    local $ENV{GETOPT_BOOL_VERBOSE} = 0;
+    $res = BoolNegEnvTest::parse_options([]);
+    is($res->{settings}->{boolnegenv}->{quiet}, 1, 'negated env: VERBOSE=0 means quiet=1');
+};
+
+subtest 'Bool negated set_env_vars' => sub {
+    package BoolNegSetTest;
+    use Getopt::Yath;
+
+    option_group {category => 'Bool Neg Set', group => 'boolnegset', no_module => 1} => sub {
+        option be_quiet => (
+            type         => 'Bool',
+            set_env_vars => ['!GETOPT_BNEG_VERBOSE'],
+            description  => 'Quiet',
+        );
+    };
+
+    package main;
+
+    local $ENV{GETOPT_BNEG_VERBOSE};
+    my $res = BoolNegSetTest::parse_options(['--be-quiet']);
+    is($ENV{GETOPT_BNEG_VERBOSE}, 0, 'negated set_env: --be-quiet (true) sets !VERBOSE to 0');
+
+    local $ENV{GETOPT_BNEG_VERBOSE};
+    $res = BoolNegSetTest::parse_options(['--no-be-quiet']);
+    is($ENV{GETOPT_BNEG_VERBOSE}, 1, 'negated set_env: --no-be-quiet (false) sets !VERBOSE to 1');
+};
+
+subtest 'Scalar negated set_env_vars' => sub {
+    package ScalarNegSetTest;
+    use Getopt::Yath;
+
+    option_group {category => 'Scl Neg Set', group => 'sclnegset', no_module => 1} => sub {
+        option flag_val => (
+            type         => 'Scalar',
+            set_env_vars => ['!GETOPT_SNEG_FLAG'],
+            description  => 'Flag value',
+        );
+    };
+
+    package main;
+
+    local $ENV{GETOPT_SNEG_FLAG};
+    my $res = ScalarNegSetTest::parse_options(['--flag-val', 'truthy']);
+    is($ENV{GETOPT_SNEG_FLAG}, 0, 'negated set_env: truthy scalar value negates to 0');
+
+    local $ENV{GETOPT_SNEG_FLAG};
+    $res = ScalarNegSetTest::parse_options(['--flag-val', '0']);
+    is($ENV{GETOPT_SNEG_FLAG}, 1, 'negated set_env: falsy scalar value negates to 1');
+};
+
+subtest 'PathList empty glob' => sub {
+    my $dir = tempdir(CLEANUP => 1);
+
+    package PathListEmptyTest;
+    use Getopt::Yath;
+
+    option_group {category => 'PL Empty', group => 'plempty', no_module => 1} => sub {
+        option no_match => (
+            type        => 'PathList',
+            description => 'No matches',
+        );
+    };
+
+    package main;
+
+    my $res = PathListEmptyTest::parse_options(['--no-match', "$dir/*.zzz_nonexistent"]);
+    is($res->{settings}->{plempty}->{no_match}, [], 'PathList with no glob matches returns empty');
+};
+
+subtest 'BoolMap with custom_matches coderef' => sub {
+    package BoolMapCustomTest;
+    use Getopt::Yath;
+
+    option_group {category => 'BM Custom', group => 'bmcustom', no_module => 1} => sub {
+        option bm_custom => (
+            type           => 'BoolMap',
+            pattern        => qr/bmcflag-(.+)/,
+            custom_matches => sub {
+                my ($self, $input, $state) = @_;
+                return unless $input =~ m/^--(?:no-)?bmcflag-(.+)$/;
+                my $key = $1;
+                my $no = $input =~ m/^--no-/;
+                return ($self, 1, [$key => $no ? 0 : 1]);
+            },
+            description => 'BoolMap with custom matcher',
+        );
+    };
+
+    package main;
+
+    my $res = BoolMapCustomTest::parse_options(['--bmcflag-alpha', '--no-bmcflag-beta']);
+    is(
+        $res->{settings}->{bmcustom}->{bm_custom},
+        {alpha => 1, beta => 0},
+        'BoolMap custom_matches coderef works',
+    );
+};
+
+subtest 'Count get_env_value' => sub {
+    my $opt = Getopt::Yath::Option->create(
+        type         => 'Count',
+        title        => 'cntenv',
+        group        => 'g',
+        no_module    => 1,
+        trace        => [caller],
+        initialize   => 0,
+    );
+    my $val = 3;
+    my @ev = $opt->get_env_value('SOME_VAR', \$val);
+    is($ev[0], 3, 'Count get_env_value returns counter value');
+};
+
+subtest 'Scalar get_env_value' => sub {
+    my $opt = Getopt::Yath::Option->create(
+        type      => 'Scalar',
+        title     => 'sclenv2',
+        group     => 'g',
+        no_module => 1,
+        trace     => [caller],
+    );
+    my $val = 'hello';
+    my @ev = $opt->get_env_value('SOME_VAR', \$val);
+    is($ev[0], 'hello', 'Scalar get_env_value returns value');
+};
+
+subtest 'Bool get_env_value negated' => sub {
+    my $opt = Getopt::Yath::Option->create(
+        type      => 'Bool',
+        title     => 'benv',
+        group     => 'g',
+        no_module => 1,
+        trace     => [caller],
+    );
+    my $val = 1;
+    is(($opt->get_env_value('VAR', \$val))[0], 1, 'Bool env value for true');
+    is(($opt->get_env_value('!VAR', \$val))[0], 0, 'Bool negated env value for true');
+    $val = 0;
+    is(($opt->get_env_value('VAR', \$val))[0], 0, 'Bool env value for false');
+    is(($opt->get_env_value('!VAR', \$val))[0], 1, 'Bool negated env value for false');
+};
+
+subtest 'List split_on with regex' => sub {
+    package ListSplitRegexTest;
+    use Getopt::Yath;
+
+    option_group {category => 'List Split', group => 'listsplit', no_module => 1} => sub {
+        option split_items => (
+            type        => 'List',
+            split_on    => qr/[;,]/,
+            description => 'Split list',
+        );
+    };
+
+    package main;
+
+    my $res = ListSplitRegexTest::parse_options(['--split-items', 'a,b;c']);
+    is($res->{settings}->{listsplit}->{split_items}, [qw/a b c/], 'List splits on regex');
+};
+
+subtest 'Map split_on' => sub {
+    package MapSplitTest;
+    use Getopt::Yath;
+
+    option_group {category => 'Map Split', group => 'mapsplit', no_module => 1} => sub {
+        option split_pairs => (
+            type        => 'Map',
+            split_on    => ',',
+            description => 'Split map',
+        );
+    };
+
+    package main;
+
+    my $res = MapSplitTest::parse_options(['--split-pairs', 'a=1,b=2']);
+    is($res->{settings}->{mapsplit}->{split_pairs}, {a => 1, b => 2}, 'Map splits on delimiter');
+};
+
+subtest 'Count explicit value then increment' => sub {
+    package CountMixTest;
+    use Getopt::Yath;
+
+    option_group {category => 'Count Mix', group => 'cntmix', no_module => 1} => sub {
+        option cntm => (
+            type        => 'Count',
+            short       => 'C',
+            initialize  => 0,
+            description => 'Mixed counter',
+        );
+    };
+
+    package main;
+
+    my $res = CountMixTest::parse_options(['-C=10', '-C', '-C']);
+    is($res->{settings}->{cntmix}->{cntm}, 12, 'Count: set to 10 then increment twice');
+};
+
+subtest 'maybe Map has no initial value' => sub {
+    package MaybeMapTest;
+    use Getopt::Yath;
+
+    option_group {category => 'Maybe Map', group => 'maybemap', no_module => 1} => sub {
+        option opt_map => (
+            type        => 'Map',
+            maybe       => 1,
+            description => 'An optional map',
+        );
+    };
+
+    package main;
+
+    my $res = MaybeMapTest::parse_options([]);
+    is($res->{settings}->{maybemap}->{opt_map}, undef, 'maybe Map has no initial value');
+};
+
 done_testing;
