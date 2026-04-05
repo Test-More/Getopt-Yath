@@ -580,6 +580,96 @@ better not to use this directly.
 Do not use this directly. The user interface you should be looking at is
 L<Getopt::Yath>.
 
+=head1 METHODS
+
+=over 4
+
+=item $state = $instance->process_args(\@argv, %params)
+
+Parse the given argument list according to the defined options. Returns a state
+hashref containing C<settings>, C<skipped>, C<remains>, C<stop>, C<cleared>,
+C<modules>, and C<env> keys. See L<Getopt::Yath> for the full list of
+parameters and the structure of the returned state.
+
+=item $option = $instance->add_option(%option_spec)
+
+Add a new option to this instance. The C<%option_spec> is passed directly to
+L<Getopt::Yath::Option/create>.
+
+=item $instance->add_post_process($weight, $applicable, $callback)
+
+Register a post-processing callback. C<$weight> controls ordering (lower runs
+first), C<$applicable> is an optional coderef filter, and C<$callback> is the
+coderef to run after parsing.
+
+=item $instance->include($other_instance)
+
+=item $instance->include($other_instance, \@list)
+
+Merge options and post-processors from another instance into this one. If
+C<\@list> is provided, only options whose title, field, or name appears in the
+list are included.
+
+=item $text = $instance->docs($format, %params)
+
+Generate documentation for all applicable options. C<$format> must be C<'cli'>
+or C<'pod'>. Params may include:
+
+=over 4
+
+=item head => $level
+
+Heading level for POD output (e.g., 2 for C<=head2>).
+
+=item group => $group_name
+
+Only show options from the specified group.
+
+=item settings => $settings
+
+An L<Getopt::Yath::Settings> object used to evaluate option applicability.
+
+=item applicable => $bool
+
+If true, include all options regardless of their applicability filter.
+
+=item color => $bool
+
+Enable or disable ANSI color in CLI output. Defaults to true if color is
+available and STDOUT is a terminal.
+
+=back
+
+=item $map = $instance->option_map()
+
+=item $map = $instance->option_map(\@options)
+
+Returns a hashref mapping all option forms (e.g., C<--verbose>, C<-v>,
+C<--no-verbose>) to their L<Getopt::Yath::Option> objects. Also includes a
+C<custom_match> key with an arrayref of custom match coderefs. Results are
+cached unless an explicit option list is provided.
+
+=item $groups = $instance->option_groups()
+
+Returns a hashref of group names defined by the current options. Results are
+cached.
+
+=item $bool = $instance->have_group($name)
+
+Returns true if any option defines the given group name.
+
+=item $instance->set_category_sort_map(%map)
+
+Set the sort ordering for documentation categories. See
+L<Getopt::Yath/category_sort_map>.
+
+=item $options = $instance->options()
+
+Returns the arrayref of L<Getopt::Yath::Option> objects registered in this
+instance.
+
+=back
+
 =head1 SOURCE
 
 The source code repository for Getopt-Yath can be found at
