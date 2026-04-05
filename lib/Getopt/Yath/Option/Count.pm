@@ -51,7 +51,7 @@ sub get_env_value {
     my ($var, $ref) = @_;
 
     return $$ref unless $var =~ m/^!/;
-    return $ref ? 0 : 1;
+    return $$ref ? 0 : 1;
 }
 
 1;
