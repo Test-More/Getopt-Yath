@@ -49,7 +49,7 @@ sub fit_to_width {
     push @out => $line if $line;
 
     if(defined $prefix) {
-        $_ =~ s/^/  /gm for @out;
+        $_ =~ s/^/$prefix/gm for @out;
     }
 
     return join "\n" => @out;
