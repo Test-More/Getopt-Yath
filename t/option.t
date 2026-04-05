@@ -318,4 +318,333 @@ subtest 'alt with underscore rejected' => sub {
     );
 };
 
+subtest 'title to field and name conversion' => sub {
+    my $opt = Getopt::Yath::Option->create(
+        type      => 'Scalar',
+        title     => 'my-dashed-title',
+        group     => 'g',
+        no_module => 1,
+        trace     => [caller],
+    );
+    is($opt->field, 'my_dashed_title', 'dashes in title become underscores in field');
+    is($opt->name,  'my-dashed-title', 'name keeps dashes');
+
+    my $opt2 = Getopt::Yath::Option->create(
+        type      => 'Scalar',
+        title     => 'my_under_title',
+        group     => 'g',
+        no_module => 1,
+        trace     => [caller],
+    );
+    is($opt2->field, 'my_under_title', 'field keeps underscores');
+    is($opt2->name,  'my-under-title', 'underscores in title become dashes in name');
+};
+
+subtest 'explicit field and name override title' => sub {
+    my $opt = Getopt::Yath::Option->create(
+        type      => 'Bool',
+        title     => 'orig',
+        field     => 'custom_field',
+        name      => 'custom-name',
+        group     => 'g',
+        no_module => 1,
+        trace     => [caller],
+    );
+    is($opt->field, 'custom_field', 'explicit field used');
+    is($opt->name,  'custom-name',  'explicit name used');
+};
+
+subtest 'field and name without title' => sub {
+    my $opt = Getopt::Yath::Option->create(
+        type      => 'Bool',
+        field     => 'my_field',
+        name      => 'my-name',
+        group     => 'g',
+        no_module => 1,
+        trace     => [caller],
+    );
+    is($opt->field, 'my_field', 'field set directly');
+    is($opt->name,  'my-name',  'name set directly');
+};
+
+subtest 'set_env_vars on non-env type' => sub {
+    like(
+        dies {
+            Getopt::Yath::Option->create(
+                type         => 'List',
+                title        => 'sev',
+                group        => 'g',
+                no_module    => 1,
+                trace        => [caller],
+                set_env_vars => ['FOO'],
+            )
+        },
+        qr/'set_env_vars' is not supported/,
+        'set_env_vars on type where can_set_env is false',
+    );
+};
+
+subtest 'autofill not allowed on wrong type' => sub {
+    like(
+        dies {
+            Getopt::Yath::Option->create(
+                type      => 'Scalar',
+                title     => 'af',
+                group     => 'g',
+                no_module => 1,
+                trace     => [caller],
+                autofill  => 'x',
+            )
+        },
+        qr/'autofill' is not allowed/,
+        'autofill rejected on Scalar type',
+    );
+};
+
+subtest 'default not allowed on Count type' => sub {
+    like(
+        dies {
+            Getopt::Yath::Option->create(
+                type      => 'Count',
+                title     => 'df',
+                group     => 'g',
+                no_module => 1,
+                trace     => [caller],
+                default   => 5,
+            )
+        },
+        qr/'default' is not allowed/,
+        'default rejected on Count type',
+    );
+};
+
+subtest 'invalid attribute key' => sub {
+    like(
+        dies {
+            Getopt::Yath::Option->create(
+                type           => 'Bool',
+                title          => 'iak',
+                group          => 'g',
+                no_module      => 1,
+                trace          => [caller],
+                bogus_nonsense => 42,
+            )
+        },
+        qr/'bogus_nonsense' is not a valid option attribute/,
+        'invalid attribute key in constructor',
+    );
+};
+
+subtest 'alt must be arrayref' => sub {
+    like(
+        dies {
+            Getopt::Yath::Option->create(
+                type      => 'Bool',
+                title     => 'aa',
+                group     => 'g',
+                no_module => 1,
+                trace     => [caller],
+                alt       => 'not-an-array',
+            )
+        },
+        qr/The 'alt' attribute must be an array-ref/,
+        'alt as string rejected',
+    );
+};
+
+subtest 'alt_no must be arrayref' => sub {
+    like(
+        dies {
+            Getopt::Yath::Option->create(
+                type      => 'Bool',
+                title     => 'ano',
+                group     => 'g',
+                no_module => 1,
+                trace     => [caller],
+                alt_no    => 'not-an-array',
+            )
+        },
+        qr/The 'alt_no' attribute must be an array-ref/,
+        'alt_no as string rejected',
+    );
+};
+
+subtest 'non-CODE ref in default rejected' => sub {
+    like(
+        dies {
+            Getopt::Yath::Option->create(
+                type      => 'Bool',
+                title     => 'ncr',
+                group     => 'g',
+                no_module => 1,
+                trace     => [caller],
+                default   => [1, 2],
+            )
+        },
+        qr/'default' must be a simple scalar, or a coderef/,
+        'arrayref default rejected',
+    );
+};
+
+subtest 'non-CODE ref in normalize rejected' => sub {
+    like(
+        dies {
+            Getopt::Yath::Option->create(
+                type      => 'Scalar',
+                title     => 'ncn',
+                group     => 'g',
+                no_module => 1,
+                trace     => [caller],
+                normalize => 'not a code ref',
+            )
+        },
+        qr/'normalize' must be undef, or a coderef/,
+        'string normalize rejected',
+    );
+};
+
+subtest 'clear_field' => sub {
+    my $opt = Getopt::Yath::Option->create(
+        type      => 'Bool',
+        title     => 'clf',
+        group     => 'g',
+        no_module => 1,
+        trace     => [caller],
+    );
+    my $val = 1;
+    $opt->clear_field(\$val);
+    is($val, 0, 'Bool clear_field sets to 0');
+};
+
+subtest 'get_initial_value from env' => sub {
+    my $opt = Getopt::Yath::Option->create(
+        type          => 'Scalar',
+        title         => 'giv',
+        group         => 'g',
+        no_module     => 1,
+        trace         => [caller],
+        from_env_vars => ['GETOPT_TEST_INIT_A', 'GETOPT_TEST_INIT_B'],
+    );
+
+    delete local $ENV{GETOPT_TEST_INIT_A};
+    local $ENV{GETOPT_TEST_INIT_B} = 'from_b';
+    is($opt->get_initial_value(), 'from_b', 'skips unset env, uses first set');
+
+    local $ENV{GETOPT_TEST_INIT_A} = 'from_a';
+    is($opt->get_initial_value(), 'from_a', 'uses first set env var');
+};
+
+subtest 'get_initial_value negated env' => sub {
+    my $opt = Getopt::Yath::Option->create(
+        type          => 'Scalar',
+        title         => 'gine',
+        group         => 'g',
+        no_module     => 1,
+        trace         => [caller],
+        from_env_vars => ['!GETOPT_TEST_NEG'],
+    );
+
+    local $ENV{GETOPT_TEST_NEG} = 1;
+    is($opt->get_initial_value(), 0, 'negated env: truthy becomes 0');
+
+    local $ENV{GETOPT_TEST_NEG} = 0;
+    is($opt->get_initial_value(), 1, 'negated env: falsy becomes 1');
+};
+
+subtest 'get_default_value and get_autofill_value' => sub {
+    my $opt = Getopt::Yath::Option->create(
+        type      => 'Auto',
+        title     => 'gdv',
+        group     => 'g',
+        no_module => 1,
+        trace     => [caller],
+        default   => 'def_val',
+        autofill  => 'auto_val',
+    );
+    is(($opt->get_default_value())[0],  'def_val',  'get_default_value returns default');
+    is(($opt->get_autofill_value())[0], 'auto_val', 'get_autofill_value returns autofill');
+};
+
+subtest 'get_default_value with coderef' => sub {
+    my $opt = Getopt::Yath::Option->create(
+        type      => 'Bool',
+        title     => 'gdvc',
+        group     => 'g',
+        no_module => 1,
+        trace     => [caller],
+        default   => sub { 1 },
+    );
+    is(($opt->get_default_value())[0], 1, 'coderef default evaluated');
+};
+
+subtest 'forms caching' => sub {
+    my $opt = Getopt::Yath::Option->create(
+        type      => 'Bool',
+        title     => 'fc',
+        group     => 'g',
+        no_module => 1,
+        trace     => [caller],
+    );
+    my $f1 = $opt->forms;
+    my $f2 = $opt->forms;
+    ok($f1 == $f2, 'forms returns cached result (same ref)');
+};
+
+subtest 'doc_forms' => sub {
+    my $opt = Getopt::Yath::Option->create(
+        type      => 'Scalar',
+        title     => 'docf',
+        group     => 'g',
+        no_module => 1,
+        trace     => [caller],
+        short     => 'd',
+        alt       => ['doc-alias'],
+        alt_no    => ['no-doc-alias'],
+    );
+    my ($forms, $no_forms) = $opt->doc_forms;
+    ok(scalar @$forms > 0, 'doc_forms returns positive forms');
+    ok((grep { /--docf / } @$forms), 'primary name in forms');
+    ok((grep { /--doc-alias / } @$forms), 'alt name in forms');
+    ok((grep { /-d/ } @$forms), 'short flag in forms');
+    ok((grep { /--no-docf/ } @$no_forms), 'no-name in no_forms');
+    ok((grep { /--no-doc-alias/ } @$no_forms), 'alt_no in no_forms');
+};
+
+subtest 'module from trace when not explicitly set' => sub {
+    # When module is not provided but no_module is also not set,
+    # init requires module or no_module. The module is normally set
+    # by option_group. Here we set it through the init flow.
+    my $opt = Getopt::Yath::Option->create(
+        type   => 'Bool',
+        title  => 'mdt',
+        group  => 'g',
+        module => 'Explicit::Module',
+        trace  => ['Some::Caller', 'file.pl', 1],
+    );
+    is($opt->module, 'Explicit::Module', 'explicit module takes precedence');
+
+    # When no module is provided, no_module must be set
+    my $opt2 = Getopt::Yath::Option->create(
+        type      => 'Bool',
+        title     => 'mdt2',
+        group     => 'g',
+        no_module => 1,
+        trace     => ['Some::Caller', 'file.pl', 1],
+    );
+    ok($opt2->no_module, 'no_module flag is set');
+};
+
+subtest 'check_value undef passes' => sub {
+    my $opt = Getopt::Yath::Option->create(
+        type           => 'Scalar',
+        title          => 'cvu',
+        group          => 'g',
+        no_module      => 1,
+        trace          => [caller],
+        allowed_values => ['a'],
+    );
+    my @bad = $opt->check_value(undef);
+    is(\@bad, [], 'check_value with undef input returns empty');
+};
+
 done_testing;
