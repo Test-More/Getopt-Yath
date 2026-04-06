@@ -112,7 +112,7 @@ sub normalize_value {
         local $@;
         unless (eval { local $SIG{__DIE__}; $out = decode_json($input[0]); 1 }) {
             my ($err) = split /[\n\r]+/, $@;
-            $err =~ s{at \Q$INC{'Getopt/Yath/Util/JSON.pm'}\E line \d+\..*$}{};
+            $err =~ s{at \Q$INC{'Getopt/Yath/Util.pm'}\E line \d+\..*$}{};
             die "Could not decode JSON string: $err\n====\n$input[0]\n====\n";
         }
         return %$out;
