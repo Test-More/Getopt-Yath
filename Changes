@@ -1,5 +1,6 @@
 {{$NEXT}}
 
+    - Fix lvalue sub tests failing on Perl < 5.026 (skip or use setter form)
     - Remove encode_json bad-input test that depends on Cpanel::JSON::XS version
     - Fix decode_json_file failing to unlink on Windows (close fh before unlink)
 
