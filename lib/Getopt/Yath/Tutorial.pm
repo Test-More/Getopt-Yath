@@ -41,7 +41,7 @@ Here is the simplest useful script with Getopt::Yath:
     };
 
     my $state = parse_options(\@ARGV);
-    my $settings = $state->{settings};
+    my $settings = $state->settings;
 
     print "Hello, " . ($settings->my->name // 'World') . "!\n";
 
@@ -125,7 +125,7 @@ don't have to repeat yourself:
     };
 
     my $state = parse_options(\@ARGV);
-    my $settings = $state->{settings};
+    my $settings = $state->settings;
 
     printf "Starting server on %s:%s\n",
         $settings->server->host,
@@ -578,13 +578,13 @@ returns a state hashref with all the parsed data.
 
     my $state = parse_options(\@ARGV);
 
-    my $settings = $state->{settings};    # Getopt::Yath::Settings object
-    my $remains  = $state->{remains};     # args after a stop token
-    my $skipped  = $state->{skipped};     # skipped non-options
-    my $stop     = $state->{stop};        # what token stopped parsing
-    my $env      = $state->{env};         # env vars that were/would be set
-    my $cleared  = $state->{cleared};     # options cleared via --no-opt
-    my $modules  = $state->{modules};     # modules whose options were used
+    my $settings = $state->settings;     # Getopt::Yath::Settings object
+    my $remains  = $state->remains;      # args after a stop token
+    my $skipped  = $state->skipped;      # skipped non-options
+    my $stop     = $state->stop;         # what token stopped parsing
+    my $env      = $state->env;          # env vars that were/would be set
+    my $cleared  = $state->cleared;      # options cleared via --no-opt
+    my $modules  = $state->modules;      # modules whose options were used
 
 =head2 Stops
 
@@ -596,8 +596,8 @@ C<-->:
     );
 
     # perl script.pl --verbose -- --not-an-option foo bar
-    #   $state->{stop}    = '--'
-    #   $state->{remains} = ['--not-an-option', 'foo', 'bar']
+    #   $state->stop    = '--'
+    #   $state->remains = ['--not-an-option', 'foo', 'bar']
 
 You can define multiple stop tokens. C<::> is commonly used as a separator for
 passing arguments through to tests:
@@ -607,8 +607,8 @@ passing arguments through to tests:
     );
 
     # perl script.pl --verbose :: --some-test-arg
-    #   $state->{stop}    = '::'
-    #   $state->{remains} = ['--some-test-arg']
+    #   $state->stop    = '::'
+    #   $state->remains = ['--some-test-arg']
 
 =head2 Handling non-options
 
@@ -619,14 +619,14 @@ throws an error. You can change this:
     my $state = parse_options(\@ARGV,
         skip_non_opts => 1,
     );
-    my @files = @{$state->{skipped}};
+    my @files = @{$state->skipped};
 
     # Stop at first non-option
     my $state = parse_options(\@ARGV,
         stop_at_non_opts => 1,
     );
-    # $state->{stop} = the non-option that caused the stop
-    # $state->{remains} = everything after it
+    # $state->stop = the non-option that caused the stop
+    # $state->remains = everything after it
 
 =head2 Handling invalid options
 
@@ -650,7 +650,7 @@ Prevent parse_options from modifying C<%ENV>:
         no_set_env => 1,
     );
 
-    # $state->{env} still shows what would have been set
+    # $state->env still shows what would have been set
 
 =head2 Argument groups
 
@@ -754,8 +754,8 @@ build composable option sets.
     };
 
     my $state = parse_options(\@ARGV);
-    # $state->{settings}->db->host, ->db->port, etc.
-    # $state->{settings}->app->debug
+    # $state->settings->db->host, ->db->port, etc.
+    # $state->settings->app->debug
 
 =head2 Selective inclusion
 
@@ -777,7 +777,7 @@ validation that depends on multiple options:
     option_post_process sub {
         my ($instance, $state) = @_;
 
-        my $settings = $state->{settings};
+        my $settings = $state->settings;
         my $server   = $settings->server;
 
         if ($server->ssl && !$server->cert_file) {
@@ -846,7 +846,7 @@ documentation.
 
 =head1 THE SETTINGS OBJECT
 
-The C<< $state->{settings} >> value is a L<Getopt::Yath::Settings> object.
+The C<< $state->settings >> value is a L<Getopt::Yath::Settings> object.
 Groups are accessed as methods:
 
     $settings->server->host;
@@ -940,7 +940,7 @@ Here is a complete script demonstrating many features together:
 
     option_post_process sub {
         my ($instance, $state) = @_;
-        my $settings = $state->{settings};
+        my $settings = $state->settings;
 
         if ($settings->app->dry_run && $settings->app->verbose < 1) {
             warn "Note: --dry-run without --verbose; enabling verbose=1\n";
@@ -959,7 +959,7 @@ Here is a complete script demonstrating many features together:
         skip_non_opts => 1,
     );
 
-    my $settings = $state->{settings};
+    my $settings = $state->settings;
 
     printf "Verbosity: %d\n", $settings->app->verbose;
     printf "Format: %s\n",    $settings->app->output_format;
@@ -969,13 +969,13 @@ Here is a complete script demonstrating many features together:
         printf "Tags: %s\n", join(', ', @$tags) if @$tags;
     }
 
-    if (my @files = @{$state->{skipped}}) {
+    if (my @files = @{$state->skipped}) {
         printf "Files: %s\n", join(', ', @files);
     }
 
-    if ($state->{stop}) {
-        printf "Stopped at: %s\n", $state->{stop};
-        printf "Remaining: %s\n", join(' ', @{$state->{remains}});
+    if ($state->stop) {
+        printf "Stopped at: %s\n", $state->stop;
+        printf "Remaining: %s\n", join(' ', @{$state->remains});
     }
 
 =head1 SEE ALSO
@@ -983,6 +983,8 @@ Here is a complete script demonstrating many features together:
 =over 4
 
 =item L<Getopt::Yath> - Main module documentation and API reference
+
+=item L<Getopt::Yath::State> - The parse result object returned by parse_options
 
 =item L<Getopt::Yath::Option> - Base option class and all available attributes
 

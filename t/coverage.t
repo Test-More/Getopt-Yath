@@ -308,7 +308,7 @@ subtest 'Getopt::Yath: inherit parameter' => sub {
     package main;
 
     my $res = CovInheritTest::parse_options(['--inh-flag']);
-    is($res->{settings}->{inh}->{inh_flag}, 1, 'inherit param does not break normal usage');
+    is($res->settings->{inh}->{inh_flag}, 1, 'inherit param does not break normal usage');
 };
 
 # ============================================================================
@@ -403,8 +403,8 @@ subtest 'Instance: process_args with pre-existing settings' => sub {
     my $res = PresetSettingsTest::parse_options([], settings => $settings);
 
     # Pre-existing values should be preserved (not overwritten by defaults)
-    is($res->{settings}->{ps}->{ps_flag}, 1,        'pre-set bool preserved');
-    is($res->{settings}->{ps}->{ps_val},  'preset',  'pre-set scalar preserved');
+    is($res->settings->{ps}->{ps_flag}, 1,        'pre-set bool preserved');
+    is($res->settings->{ps}->{ps_val},  'preset',  'pre-set scalar preserved');
 };
 
 # ============================================================================
@@ -431,7 +431,7 @@ subtest 'Instance: process_args with pre-set env/cleared/modules' => sub {
         modules => \%modules,
     );
 
-    is($res->{env}->{EXISTING}, 'val', 'pre-set env preserved');
+    is($res->env->{EXISTING}, 'val', 'pre-set env preserved');
 };
 
 # ============================================================================

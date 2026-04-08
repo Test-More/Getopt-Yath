@@ -15,9 +15,9 @@ subtest 'stop_at_non_opts' => sub {
     package main;
 
     my $res = StopNonOpt::parse_options(['-v', 'somefile.txt', '--verbose'], stop_at_non_opts => 1);
-    is($res->{settings}->{stop}->{verbose}, 1, 'options before stop parsed');
-    is($res->{stop}, 'somefile.txt', 'stopped at non-option');
-    is($res->{remains}, ['--verbose'], 'remaining args preserved');
+    is($res->settings->{stop}->{verbose}, 1, 'options before stop parsed');
+    is($res->stop, 'somefile.txt', 'stopped at non-option');
+    is($res->remains, ['--verbose'], 'remaining args preserved');
 };
 
 subtest 'stop_at_invalid_opts' => sub {
@@ -34,9 +34,9 @@ subtest 'stop_at_invalid_opts' => sub {
     package main;
 
     my $res = StopInvalid::parse_options(['--debug', '--unknown-flag', '--debug'], stop_at_invalid_opts => 1);
-    is($res->{settings}->{stop2}->{debug}, 1, 'valid option parsed before stop');
-    is($res->{stop}, '--unknown-flag', 'stopped at invalid option');
-    is($res->{remains}, ['--debug'], 'remaining args preserved');
+    is($res->settings->{stop2}->{debug}, 1, 'valid option parsed before stop');
+    is($res->stop, '--unknown-flag', 'stopped at invalid option');
+    is($res->remains, ['--debug'], 'remaining args preserved');
 };
 
 subtest 'skip_non_opts' => sub {
@@ -53,8 +53,8 @@ subtest 'skip_non_opts' => sub {
     package main;
 
     my $res = SkipNonOpt::parse_options(['file1.txt', '--active', 'file2.txt'], skip_non_opts => 1);
-    is($res->{settings}->{skip}->{active}, 1, 'option parsed');
-    is($res->{skipped}, ['file1.txt', 'file2.txt'], 'non-opts collected in skipped');
+    is($res->settings->{skip}->{active}, 1, 'option parsed');
+    is($res->skipped, ['file1.txt', 'file2.txt'], 'non-opts collected in skipped');
 };
 
 subtest 'groups :{ }:' => sub {
@@ -74,7 +74,7 @@ subtest 'groups :{ }:' => sub {
         ['--items', ':{', 'a', 'b', 'c', '}:'],
         groups => {':{' => '}:'},
     );
-    is($res->{settings}->{grp}->{items}, [qw/a b c/], 'group tokens collect into arrayref');
+    is($res->settings->{grp}->{items}, [qw/a b c/], 'group tokens collect into arrayref');
 };
 
 subtest 'groups unmatched end token' => sub {
@@ -109,9 +109,9 @@ subtest 'standalone groups go to skipped' => sub {
         groups       => {':{' => '}:'},
         skip_non_opts => 1,
     );
-    is($res->{settings}->{sg}->{flag}, 1, 'flag parsed');
+    is($res->settings->{sg}->{flag}, 1, 'flag parsed');
     # Standalone group contents are collected as an arrayref in skipped
-    is($res->{skipped}, [['hello', 'world']], 'standalone group contents go to skipped as arrayref');
+    is($res->skipped, [['hello', 'world']], 'standalone group contents go to skipped as arrayref');
 };
 
 subtest 'arg=val empty value' => sub {
@@ -126,7 +126,7 @@ subtest 'arg=val empty value' => sub {
 
     # --thing= with empty string is valid and sets to empty string
     my $res = ArgValTest::parse_options(['--thing=']);
-    is($res->{settings}->{av}->{thing}, '', '--opt= sets empty string value');
+    is($res->settings->{av}->{thing}, '', '--opt= sets empty string value');
 };
 
 subtest 'prefix on option_group' => sub {
@@ -143,7 +143,7 @@ subtest 'prefix on option_group' => sub {
     package main;
 
     my $res = PrefixTest::parse_options(['--runner-timeout', '30']);
-    is($res->{settings}->{pfx}->{timeout}, '30', 'prefix + option name works');
+    is($res->settings->{pfx}->{timeout}, '30', 'prefix + option name works');
 
     like(
         dies { PrefixTest::parse_options(['--timeout', '30']) },
@@ -169,8 +169,8 @@ subtest 'include_options' => sub {
     package main;
 
     my $res = IncludeTarget::parse_options(['--alpha', '--beta', 'hello']);
-    is($res->{settings}->{src}->{alpha}, 1, 'included Bool option works');
-    is($res->{settings}->{src}->{beta}, 'hello', 'included Scalar option works');
+    is($res->settings->{src}->{alpha}, 1, 'included Bool option works');
+    is($res->settings->{src}->{beta}, 'hello', 'included Scalar option works');
 };
 
 subtest 'include_options with filter list' => sub {
@@ -191,8 +191,8 @@ subtest 'include_options with filter list' => sub {
     package main;
 
     my $res = FilterTarget::parse_options(['--one', '--three']);
-    is($res->{settings}->{fs}->{one},   1, 'filtered option "one" included');
-    is($res->{settings}->{fs}->{three}, 1, 'filtered option "three" included');
+    is($res->settings->{fs}->{one},   1, 'filtered option "one" included');
+    is($res->settings->{fs}->{three}, 1, 'filtered option "three" included');
 
     like(
         dies { FilterTarget::parse_options(['--two']) },
@@ -217,7 +217,7 @@ subtest 'option_group nesting' => sub {
     package main;
 
     my $res = NestTest::parse_options(['--inner-opt']);
-    is($res->{settings}->{nest}->{inner_opt}, 1, 'nested option_group inherits outer group');
+    is($res->settings->{nest}->{inner_opt}, 1, 'nested option_group inherits outer group');
 };
 
 subtest 'invalid_opt_callback' => sub {
@@ -258,9 +258,9 @@ subtest 'multiple stops' => sub {
         ['--mflag', '::', 'remaining'],
         stops => ['--', '::'],
     );
-    is($res->{stop}, '::', 'stopped at ::');
-    is($res->{remains}, ['remaining'], 'remaining captured');
-    is($res->{settings}->{ms}->{mflag}, 1, 'flag before stop parsed');
+    is($res->stop, '::', 'stopped at ::');
+    is($res->remains, ['remaining'], 'remaining captured');
+    is($res->settings->{ms}->{mflag}, 1, 'flag before stop parsed');
 };
 
 subtest 'skip_posts' => sub {
@@ -298,7 +298,7 @@ subtest 'nested groups' => sub {
         groups => {':{' => '}:'},
     );
     is(
-        $res->{settings}->{ng}->{nlist},
+        $res->settings->{ng}->{nlist},
         ['a', ['inner1', 'inner2'], 'b'],
         'nested groups produce nested arrayrefs',
     );
@@ -412,8 +412,8 @@ subtest '--no-opt then --opt=val' => sub {
     package main;
 
     my $res = ClearThenSet::parse_options(['--no-cts-val', '--cts-val=new']);
-    is($res->{settings}->{cts}->{cts_val}, 'new', 'clear then set gives new value');
-    ok(!$res->{cleared}->{cts}->{cts_val}, 'cleared state removed after re-set');
+    is($res->settings->{cts}->{cts_val}, 'new', 'clear then set gives new value');
+    ok(!$res->cleared->{cts}->{cts_val}, 'cleared state removed after re-set');
 };
 
 subtest 'cleared option skips default' => sub {
@@ -427,7 +427,7 @@ subtest 'cleared option skips default' => sub {
     package main;
 
     my $res = ClearNoDefault::parse_options(['--no-cnd-val']);
-    is($res->{settings}->{cnd}->{cnd_val}, undef, 'cleared option does not get default');
+    is($res->settings->{cnd}->{cnd_val}, undef, 'cleared option does not get default');
 };
 
 subtest 'skip_invalid_opts collects skipped' => sub {
@@ -444,8 +444,8 @@ subtest 'skip_invalid_opts collects skipped' => sub {
         ['--sio-flag', '--invalid-one', '--invalid-two'],
         skip_invalid_opts => 1,
     );
-    is($res->{settings}->{sio}->{sio_flag}, 1, 'valid option parsed');
-    is($res->{skipped}, ['--invalid-one', '--invalid-two'], 'invalid opts collected in skipped');
+    is($res->settings->{sio}->{sio_flag}, 1, 'valid option parsed');
+    is($res->skipped, ['--invalid-one', '--invalid-two'], 'invalid opts collected in skipped');
 };
 
 subtest 'docs with group filter' => sub {

@@ -10,6 +10,7 @@ use Getopt::Yath::Util qw/mod2file/;
 
 use Getopt::Yath::Option;
 use Getopt::Yath::Settings;
+use Getopt::Yath::State;
 use Getopt::Yath::Term qw/USE_COLOR color/;
 
 use Getopt::Yath::HashBase qw{
@@ -211,7 +212,7 @@ sub process_args {
     my $options = [ grep { $_->is_applicable($self, $settings) } @{$self->options // []} ];
 
     my @skip;
-    my $state = {
+    my $state = Getopt::Yath::State->new({
         settings => $settings,
         skipped  => \@skip,
         remains  => $argv,
@@ -219,7 +220,7 @@ sub process_args {
         cleared  => $params{cleared} // {},
         modules  => $params{modules} // {},
         stop     => undef,
-    };
+    });
 
     for my $opt (@$options) {
         my $group = $settings->group($opt->group, 1);
@@ -274,13 +275,13 @@ sub process_args {
         }
 
         if ($stops->{$base}) {
-            $state->{stop} = $base;
+            $state->set_stop($base);
             last;
         }
 
         if ($base !~ m/^-/) {
             if ($params{stop_at_non_opts}) {
-                $state->{stop} = $base;
+                $state->set_stop($base);
                 last;
             }
 
@@ -337,7 +338,7 @@ sub process_args {
             }
 
             if ($params{stop_at_invalid_opts}) {
-                $state->{stop} = $base;
+                $state->set_stop($base);
                 last;
             }
 
@@ -349,7 +350,7 @@ sub process_args {
 
         $delta //= $opt->forms->{$first};
 
-        $state->{modules}->{$opt->module}++ unless $opt->no_module;
+        $state->modules->{$opt->module}++ unless $opt->no_module;
 
         my $group_name = $opt->group;
         my $field_name = $opt->field;
@@ -359,11 +360,11 @@ sub process_args {
         if ($delta < 0) {
             $opt->clear_field($ref);
             $opt->trigger(action => 'clear', ref => $ref, val => undef, state => $state, options => $self, settings => $settings, group => $group);
-            $state->{cleared}->{$group_name}->{$field_name} = 1;
+            $state->cleared->{$group_name}->{$field_name} = 1;
             next unless $set;
         }
 
-        delete $state->{cleared}->{$group_name}->{$field_name} if $state->{cleared}->{$group_name};
+        delete $state->cleared->{$group_name}->{$field_name} if $state->cleared->{$group_name};
 
         if ($opt->requires_arg && !$set) {
             die "No argument provided to '$first'.\n" unless @$argv;
@@ -420,7 +421,7 @@ sub process_args {
         my $ref   = $group->option_ref($field_name, 1);
 
         # Do not set the default if the --no-OPT form was used.
-        next if $state->{cleared} && $state->{cleared}->{$group_name} && $state->{cleared}->{$group_name}->{$field_name};
+        next if $state->cleared && $state->cleared->{$group_name} && $state->cleared->{$group_name}->{$field_name};
         next if $opt->is_populated($ref);
         $opt->add_value($ref, $opt->get_default_value($settings));
     }
@@ -439,7 +440,7 @@ sub process_args {
         my $ref   = $group->option_ref($opt->field, 1);
 
         for my $env (@{$opt->clear_env_vars // []}) {
-            $state->{env}->{$env} = undef;
+            $state->env->{$env} = undef;
             delete $ENV{$env} unless $params{no_set_env};
         }
 
@@ -466,7 +467,7 @@ sub process_args {
             my $setval = $val[0];
             $setval = $setval ? 0 : 1 if $neg;
 
-            $state->{env}->{$env} = $setval;
+            $state->env->{$env} = $setval;
             $ENV{$env} = $setval unless $params{no_set_env};
         }
     }
@@ -586,10 +587,11 @@ L<Getopt::Yath>.
 
 =item $state = $instance->process_args(\@argv, %params)
 
-Parse the given argument list according to the defined options. Returns a state
-hashref containing C<settings>, C<skipped>, C<remains>, C<stop>, C<cleared>,
-C<modules>, and C<env> keys. See L<Getopt::Yath> for the full list of
-parameters and the structure of the returned state.
+Parse the given argument list according to the defined options. Returns a
+L<Getopt::Yath::State> object containing C<settings>, C<skipped>, C<remains>,
+C<stop>, C<cleared>, C<modules>, and C<env> accessors. See L<Getopt::Yath>
+for the full list of parameters and L<Getopt::Yath::State> for the returned
+object.
 
 =item $option = $instance->add_option(%option_spec)
 

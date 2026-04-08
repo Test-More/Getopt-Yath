@@ -162,22 +162,18 @@ of yath as well.
         groups        => { ':{' => '}:' },                                     # Arguments between the :{ and }: will be captured into an arrayref, they can be used as option values, or stand-alone
     );
 
-The C<$parsed> structure:
+C<$parsed> is a L<Getopt::Yath::State> object:
 
-    $parsed = {
-        'cleared' => {},                       # Options that were cleared with --no-opt
-        'skipped' => ['not_an_opt'],           # Skipped non options
-        'settings' => {                        # Blessed as Getopt::Yath::Settings
-            'settings_group' => {              # Blessed as Getopt::Yath::Settings::Group
-                'verbose'  => 1,               # The option and its value
-                'username' => 'fred',          # Another option and value
-            },
-        },
-        'stop'    => '--',                     # We stopped at '--', if there was no '--' this would be undef
-        'remains' => ['--will-not-process'],   # Stuff after the '--' that we did not process
-        'modules' => {'My::Package' => 2},     # Any module that provided options that were seen will be listed
-        'env'     => {'VERBOSE' => 1}          # Environment variables that would have been set if not for 'no_set_env'
-    };
+    $parsed->cleared;     # {} - Options that were cleared with --no-opt
+    $parsed->skipped;     # ['not_an_opt'] - Skipped non options
+    $parsed->settings;    # Blessed as Getopt::Yath::Settings
+                          #   ->settings_group (Blessed as Getopt::Yath::Settings::Group)
+                          #       ->verbose  == 1
+                          #       ->username == 'fred'
+    $parsed->stop;        # '--' - We stopped at '--', if there was no '--' this would be undef
+    $parsed->remains;     # ['--will-not-process'] - Stuff after the '--' that we did not process
+    $parsed->modules;     # {'My::Package' => 2} - Any module that provided options that were seen
+    $parsed->env;         # {'VERBOSE' => 1} - Environment variables that would have been set
 
 =head2 GENERATING COMMAND LINE HELP OUTPUT:
 
@@ -268,26 +264,12 @@ defined options, and does all the real work under the hood.
 
 =item $parsed = parse_options(\@ARGV, %PARAMS)
 
-This processes an arrayref of command line arguments into a structure that can
-be easily referenced. If there is a problem parsing, such as invalid options in
-the array, exceptions will be thrown.
+This processes an arrayref of command line arguments and returns a
+L<Getopt::Yath::State> object. If there is a problem parsing, such as invalid
+options in the array, exceptions will be thrown.
 
-The C<$parsed> structure will look like this:
-
-    $parsed = {
-        'cleared' => {},                       # Options that were cleared with --no-opt
-        'skipped' => ['not_an_opt'],           # Skipped non options
-        'settings' => {                        # Blessed as Getopt::Yath::Settings
-            'settings_group' => {              # Blessed as Getopt::Yath::Settings::Group
-                'verbose'  => 1,               # The option and its value
-                'username' => 'fred',          # Another option and value
-            },
-        },
-        'stop'    => '--',                     # We stopped at '--', if there was no '--' this would be undef
-        'remains' => ['--will-not-process'],   # Stuff after the '--' that we did not process
-        'modules' => {'My::Package' => 2},     # Any module that provided options that were seen will be listed
-        'env'     => {'VERBOSE' => 1}          # Environment variables that would have been set if not for 'no_set_env'
-    };
+See L<Getopt::Yath::State> for the full list of accessors on the returned
+object.
 
 Available parameters that affect parsing are:
 
@@ -298,9 +280,9 @@ Available parameters that affect parsing are:
 =item stops => ['--']
 
 This is a list of string that if encountered should stop the parsing process.
-The string encountered will be put into the C<stop> field of the C<$parsed>
-structure. Any unparsed arguments after the stop will be put into the
-C<remains> key of the C<$parsed> structure.
+The string encountered will be available via C<< $parsed->stop >>. Any
+unparsed arguments after the stop will be available via
+C<< $parsed->remains >>.
 
 This is mostly useful for supporting the C<--> option.
 
@@ -315,37 +297,38 @@ Arguments between the specified start and end tokens will be grouped together in
 This will cause parsing to stop at any non-option. A non-option in this case is
 any argument that does not start with a C<->.
 
-The item stopped at will be placed in the C<stop> field of the C<$parsed>
-structure with the remaining arguments placed in the C<remains> field.
+The item stopped at will be available via C<< $parsed->stop >> with the
+remaining arguments available via C<< $parsed->remains >>.
 
 =item skip_non_opts => BOOL
 
 This will skip any non-option encountered. A non-option is any argument that
-does not start with C<->. All skipped items will be placed into the C<skipped>
-field of the <$parsed> structure.
+does not start with C<->. All skipped items will be available via
+C<< $parsed->skipped >>.
 
 =item skip_invalid_opts => BOOL
 
 This will skip any invalid option encountered. This includes any argument that
-starts with C<-> but is not a valid option. All skipped items will be placed
-into the C<skipped> field of the <$parsed> structure.
+starts with C<-> but is not a valid option. All skipped items will be available
+via C<< $parsed->skipped >>.
 
 =item stop_at_invalid_opts => BOOL
 
 This will cause parsing to stop at any invalid option. This includes any
 argument that starts with C<-> but is not a valid option.
 
-The item stopped at will be placed in the C<stop> field of the C<$parsed>
-structure with the remaining arguments placed in the C<remains> field.
+The item stopped at will be available via C<< $parsed->stop >> with the
+remaining arguments available via C<< $parsed->remains >>.
 
 =item no_set_env => BOOL
 
 Set this to true to prevent any modifications to C<%ENV>.
 
-The C<env> key of the C<$parsed> structure will contain the environment
-variable changes that would have been made.
+C<< $parsed->env >> will contain the environment variable changes that would
+have been made.
 
-B<Note:> The env key is always included even if C<%ENV> is modified directly.
+B<Note:> The env accessor is always populated even if C<%ENV> is modified
+directly.
 
 =back
 

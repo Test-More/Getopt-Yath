@@ -1,5 +1,6 @@
 {{$NEXT}}
 
+    - Add Getopt::Yath::State object returned by parse_options/process_args
     - Add Getopt::Yath::Tutorial with step-by-step usage guide
     - Add missing Cpanel::JSON::XS dependency to dist.ini
     - Move Test2::V0 from runtime to test prerequisites

@@ -23,14 +23,14 @@ subtest 'BoolMap pattern matching' => sub {
 
     my $res = BoolMapTest::parse_options(['--feature-foo', '--feature-bar', '--no-feature-baz']);
     is(
-        $res->{settings}->{boolmap}->{features},
+        $res->settings->{boolmap}->{features},
         {foo => 1, bar => 1, baz => 0},
         'BoolMap matches patterns and respects --no- prefix',
     );
 
     $res = BoolMapTest::parse_options(['--no-features']);
     is(
-        $res->{settings}->{boolmap}->{features},
+        $res->settings->{boolmap}->{features},
         {},
         'BoolMap --no clears all values',
     );
@@ -56,11 +56,11 @@ subtest 'PathList glob expansion' => sub {
     package main;
 
     my $res = PathListTest::parse_options(['--files', "$dir/*.txt"]);
-    my @files = sort @{$res->{settings}->{pathlist}->{files}};
+    my @files = sort @{$res->settings->{pathlist}->{files}};
     is(\@files, ["$dir/alpha.txt", "$dir/beta.txt"], 'PathList expands globs');
 
     $res = PathListTest::parse_options(['--files', "$dir/gamma.log"]);
-    is($res->{settings}->{pathlist}->{files}, ["$dir/gamma.log"], 'PathList passes non-glob through');
+    is($res->settings->{pathlist}->{files}, ["$dir/gamma.log"], 'PathList passes non-glob through');
 };
 
 subtest 'List JSON parsing' => sub {
@@ -78,7 +78,7 @@ subtest 'List JSON parsing' => sub {
 
     my $res = ListJsonTest::parse_options(['--items', '["aaa","bbb","ccc"]']);
     is(
-        $res->{settings}->{listjson}->{items},
+        $res->settings->{listjson}->{items},
         ['aaa', 'bbb', 'ccc'],
         'List parses JSON array input',
     );
@@ -99,7 +99,7 @@ subtest 'Map JSON parsing' => sub {
 
     my $res = MapJsonTest::parse_options(['--kvs', '{"x":"1","y":"2"}']);
     is(
-        $res->{settings}->{mapjson}->{kvs},
+        $res->settings->{mapjson}->{kvs},
         {x => '1', y => '2'},
         'Map parses JSON object input',
     );
@@ -121,7 +121,7 @@ subtest 'Map custom key_on delimiter' => sub {
 
     my $res = MapKeyOnTest::parse_options(['--pairs', 'host:localhost']);
     is(
-        $res->{settings}->{mapkeyon}->{pairs},
+        $res->settings->{mapkeyon}->{pairs},
         {host => 'localhost'},
         'Map uses custom key_on delimiter',
     );
@@ -143,12 +143,12 @@ subtest 'Bool set_env_vars' => sub {
 
     local $ENV{OT_TEST_A};
     my $res = BoolEnvTest::parse_options(['--loud']);
-    is($res->{env}->{OT_TEST_A}, 1, 'Bool set_env_vars sets env to 1 when true');
+    is($res->env->{OT_TEST_A}, 1, 'Bool set_env_vars sets env to 1 when true');
     is($ENV{OT_TEST_A}, 1, 'ENV actually set');
 
     local $ENV{OT_TEST_A};
     $res = BoolEnvTest::parse_options(['--loud'], no_set_env => 1);
-    is($res->{env}->{OT_TEST_A}, 1, 'env recorded in state');
+    is($res->env->{OT_TEST_A}, 1, 'env recorded in state');
     ok(!$ENV{OT_TEST_A}, 'ENV not set with no_set_env');
 };
 
@@ -170,7 +170,7 @@ subtest 'Count set_env_vars' => sub {
 
     local $ENV{OT_TEST_B};
     my $res = CountEnvTest::parse_options(['-VVV']);
-    is($res->{env}->{OT_TEST_B}, 3, 'Count set_env_vars captures counter value');
+    is($res->env->{OT_TEST_B}, 3, 'Count set_env_vars captures counter value');
 };
 
 subtest 'Scalar with allowed_values at parse time' => sub {
@@ -188,7 +188,7 @@ subtest 'Scalar with allowed_values at parse time' => sub {
     package main;
 
     my $res = ScalarAVTest::parse_options(['--level', 'medium']);
-    is($res->{settings}->{sav}->{level}, 'medium', 'valid allowed_values accepted');
+    is($res->settings->{sav}->{level}, 'medium', 'valid allowed_values accepted');
 
     like(
         dies { ScalarAVTest::parse_options(['--level', 'extreme']) },
@@ -212,7 +212,7 @@ subtest 'Scalar with normalize' => sub {
     package main;
 
     my $res = NormTest::parse_options(['--mode', 'UPPER']);
-    is($res->{settings}->{norm}->{mode}, 'upper', 'normalize callback applied during parsing');
+    is($res->settings->{norm}->{mode}, 'upper', 'normalize callback applied during parsing');
 };
 
 subtest 'maybe option attribute' => sub {
@@ -236,8 +236,8 @@ subtest 'maybe option attribute' => sub {
     package main;
 
     my $res = MaybeTest::parse_options([]);
-    is($res->{settings}->{maybe}->{optional}, undef, 'maybe Bool has no default');
-    is($res->{settings}->{maybe}->{opt_list}, undef, 'maybe List has no initial value');
+    is($res->settings->{maybe}->{optional}, undef, 'maybe Bool has no default');
+    is($res->settings->{maybe}->{opt_list}, undef, 'maybe List has no initial value');
 };
 
 subtest 'List JSON parse error' => sub {
@@ -318,7 +318,7 @@ subtest 'List with from_env_vars' => sub {
     local $ENV{GETOPT_LIST_TEST_A} = 'aval';
     local $ENV{GETOPT_LIST_TEST_B} = 'bval';
     my $res = ListEnvTest::parse_options([]);
-    is($res->{settings}->{listenv}->{env_list}, ['aval', 'bval'], 'List collects from multiple env vars');
+    is($res->settings->{listenv}->{env_list}, ['aval', 'bval'], 'List collects from multiple env vars');
 };
 
 subtest 'Map with from_env_vars' => sub {
@@ -337,7 +337,7 @@ subtest 'Map with from_env_vars' => sub {
 
     local $ENV{GETOPT_MAP_TEST_X} = 'xval';
     my $res = MapEnvTest::parse_options([]);
-    is($res->{settings}->{mapenv}->{env_map}, {GETOPT_MAP_TEST_X => 'xval'}, 'Map uses env var name as key');
+    is($res->settings->{mapenv}->{env_map}, {GETOPT_MAP_TEST_X => 'xval'}, 'Map uses env var name as key');
 };
 
 subtest 'Bool negated from_env_vars' => sub {
@@ -356,11 +356,11 @@ subtest 'Bool negated from_env_vars' => sub {
 
     local $ENV{GETOPT_BOOL_VERBOSE} = 1;
     my $res = BoolNegEnvTest::parse_options([]);
-    is($res->{settings}->{boolnegenv}->{quiet}, 0, 'negated env: VERBOSE=1 means quiet=0');
+    is($res->settings->{boolnegenv}->{quiet}, 0, 'negated env: VERBOSE=1 means quiet=0');
 
     local $ENV{GETOPT_BOOL_VERBOSE} = 0;
     $res = BoolNegEnvTest::parse_options([]);
-    is($res->{settings}->{boolnegenv}->{quiet}, 1, 'negated env: VERBOSE=0 means quiet=1');
+    is($res->settings->{boolnegenv}->{quiet}, 1, 'negated env: VERBOSE=0 means quiet=1');
 };
 
 subtest 'Bool negated set_env_vars' => sub {
@@ -425,7 +425,7 @@ subtest 'PathList empty glob' => sub {
     package main;
 
     my $res = PathListEmptyTest::parse_options(['--no-match', "$dir/*.zzz_nonexistent"]);
-    is($res->{settings}->{plempty}->{no_match}, [], 'PathList with no glob matches returns empty');
+    is($res->settings->{plempty}->{no_match}, [], 'PathList with no glob matches returns empty');
 };
 
 subtest 'BoolMap with custom_matches coderef' => sub {
@@ -451,7 +451,7 @@ subtest 'BoolMap with custom_matches coderef' => sub {
 
     my $res = BoolMapCustomTest::parse_options(['--bmcflag-alpha', '--no-bmcflag-beta']);
     is(
-        $res->{settings}->{bmcustom}->{bm_custom},
+        $res->settings->{bmcustom}->{bm_custom},
         {alpha => 1, beta => 0},
         'BoolMap custom_matches coderef works',
     );
@@ -515,7 +515,7 @@ subtest 'List split_on with regex' => sub {
     package main;
 
     my $res = ListSplitRegexTest::parse_options(['--split-items', 'a,b;c']);
-    is($res->{settings}->{listsplit}->{split_items}, [qw/a b c/], 'List splits on regex');
+    is($res->settings->{listsplit}->{split_items}, [qw/a b c/], 'List splits on regex');
 };
 
 subtest 'Map split_on' => sub {
@@ -533,7 +533,7 @@ subtest 'Map split_on' => sub {
     package main;
 
     my $res = MapSplitTest::parse_options(['--split-pairs', 'a=1,b=2']);
-    is($res->{settings}->{mapsplit}->{split_pairs}, {a => 1, b => 2}, 'Map splits on delimiter');
+    is($res->settings->{mapsplit}->{split_pairs}, {a => 1, b => 2}, 'Map splits on delimiter');
 };
 
 subtest 'Count explicit value then increment' => sub {
@@ -552,7 +552,7 @@ subtest 'Count explicit value then increment' => sub {
     package main;
 
     my $res = CountMixTest::parse_options(['-C=10', '-C', '-C']);
-    is($res->{settings}->{cntmix}->{cntm}, 12, 'Count: set to 10 then increment twice');
+    is($res->settings->{cntmix}->{cntm}, 12, 'Count: set to 10 then increment twice');
 };
 
 subtest 'maybe Map has no initial value' => sub {
@@ -570,7 +570,7 @@ subtest 'maybe Map has no initial value' => sub {
     package main;
 
     my $res = MaybeMapTest::parse_options([]);
-    is($res->{settings}->{maybemap}->{opt_map}, undef, 'maybe Map has no initial value');
+    is($res->settings->{maybemap}->{opt_map}, undef, 'maybe Map has no initial value');
 };
 
 done_testing;
