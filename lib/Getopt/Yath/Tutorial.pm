@@ -978,6 +978,171 @@ Here is a complete script demonstrating many features together:
         printf "Remaining: %s\n", join(' ', @{$state->remains});
     }
 
+=head1 ADVANCED: MULTI-STAGE PARSING WITH SUBCOMMANDS
+
+Many tools follow a C<script [GLOBAL OPTIONS] subcommand [COMMAND OPTIONS]>
+pattern, where the script has its own set of options, a subcommand name, and
+then the subcommand has its own options. Getopt::Yath supports this through
+multi-stage parsing: parse the global options first (stopping at the
+subcommand), then load the subcommand and parse its options from the remaining
+arguments.
+
+=head2 Step 1: Define global options
+
+Create a package for your script-level options.
+
+    package My::CLI;
+    use strict;
+    use warnings;
+    use Getopt::Yath;
+
+    option_group {group => 'global', category => 'Global Options'} => sub {
+
+        option verbose => (
+            type        => 'Count',
+            short       => 'v',
+            initialize  => 0,
+            description => 'Increase verbosity',
+        );
+
+        option config => (
+            type        => 'Scalar',
+            short       => 'c',
+            description => 'Path to config file',
+        );
+
+    };
+
+=head2 Step 2: Define subcommand option packages
+
+Each subcommand is a separate package with its own options:
+
+    package My::CLI::Command::deploy;
+    use strict;
+    use warnings;
+    use Getopt::Yath;
+
+    option_group {group => 'deploy', category => 'Deploy Options'} => sub {
+
+        option target => (
+            type        => 'Scalar',
+            short       => 't',
+            description => 'Deployment target (staging, production)',
+        );
+
+        option dry_run => (
+            type        => 'Bool',
+            short       => 'n',
+            default     => 0,
+            description => 'Perform a dry run',
+        );
+
+    };
+
+    sub run {
+        my ($class, $settings) = @_;
+        printf "Deploying to %s (dry_run=%s, verbose=%d)\n",
+            $settings->deploy->target // 'default',
+            $settings->deploy->dry_run ? 'yes' : 'no',
+            $settings->global->verbose;
+    }
+
+    package My::CLI::Command::test;
+    use strict;
+    use warnings;
+    use Getopt::Yath;
+
+    option_group {group => 'test', category => 'Test Options'} => sub {
+
+        option jobs => (
+            type        => 'Scalar',
+            short       => 'j',
+            default     => 1,
+            description => 'Number of parallel test jobs',
+        );
+
+        option tags => (
+            type        => 'List',
+            split_on    => ',',
+            description => 'Filter tests by tag',
+        );
+
+    };
+
+    sub run {
+        my ($class, $settings) = @_;
+        printf "Running tests with %d jobs (verbose=%d)\n",
+            $settings->test->jobs,
+            $settings->global->verbose;
+    }
+
+=head2 Step 3: Two-stage dispatch
+
+Parse global options first, stopping at the subcommand name. Then load the
+subcommand module, include its options, and parse the remaining arguments using
+the combined option set. Pass the settings object through so both stages share
+state.
+
+    package main;
+
+    my %commands = (
+        deploy => 'My::CLI::Command::deploy',
+        test   => 'My::CLI::Command::test',
+    );
+
+    # Stage 1: Parse global options, stop at the subcommand name
+    my $stage1 = My::CLI::parse_options(
+        \@ARGV,
+        stop_at_non_opts => 1,
+    );
+
+    my $command_name = $stage1->stop
+        or die "Usage: my-cli [global options] <command> [command options]\n";
+
+    my $command_class = $commands{$command_name}
+        or die "Unknown command: $command_name\n";
+
+    # Stage 2: Include command options, parse remaining args
+    #          Carry forward settings so global values are preserved
+    My::CLI::include_options($command_class);
+
+    my $stage2 = My::CLI::parse_options(
+        $stage1->remains,
+        settings => $stage1->settings,
+    );
+
+    # Dispatch — settings object has both global and command groups
+    $command_class->run($stage2->settings);
+
+=head2 Example invocations
+
+    $ my-cli -vv deploy --target production --dry-run
+    Deploying to production (dry_run=yes, verbose=2)
+
+    $ my-cli --config app.yml test -j8 --tags smoke,unit
+    Running tests with 8 jobs (verbose=0)
+
+The key techniques are:
+
+=over 4
+
+=item *
+
+B<stop_at_non_opts> in Stage 1 stops parsing at the subcommand name, placing
+it in C<< $state->stop >> and the rest in C<< $state->remains >>.
+
+=item *
+
+B<include_options> merges the subcommand's options into the script's option
+instance before Stage 2.
+
+=item *
+
+B<settings> is passed from Stage 1 to Stage 2 so the global values are
+preserved and both stages write into the same settings object.
+
+=back
+
 =head1 SEE ALSO
 
 =over 4
