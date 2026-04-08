@@ -1,5 +1,6 @@
 {{$NEXT}}
 
+    - Remove encode_json bad-input test that depends on Cpanel::JSON::XS version
     - Fix decode_json_file failing to unlink on Windows (close fh before unlink)
 
 2.000009  2026-04-07 20:17:28-07:00 America/Los_Angeles
