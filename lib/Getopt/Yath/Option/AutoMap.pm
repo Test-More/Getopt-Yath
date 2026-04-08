@@ -2,7 +2,7 @@ package Getopt::Yath::Option::AutoMap;
 use strict;
 use warnings;
 
-our $VERSION = '2.000011';
+our $VERSION = '2.000012';
 
 use parent 'Getopt::Yath::Option::Map';
 use Getopt::Yath::HashBase;
