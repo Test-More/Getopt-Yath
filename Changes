@@ -1,5 +1,7 @@
 {{$NEXT}}
 
+2.000011  2026-04-08 15:36:55-07:00 America/Los_Angeles
+
     - Skip JSON decode error tests on Perl < 5.014 (unreliable $@ handling)
 
 2.000010  2026-04-08 08:16:27-07:00 America/Los_Angeles
