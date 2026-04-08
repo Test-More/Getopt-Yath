@@ -41,6 +41,7 @@ sub decode_json_file {
 
     open(my $fh, '<', $file) or die "Could not open '$file': $!";
     my $json = do { local $/; <$fh> };
+    close($fh);
 
     if ($params{unlink}) {
         unlink($file) or warn "Could not unlink '$file': $!";
